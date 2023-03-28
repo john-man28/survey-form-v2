@@ -1,16 +1,35 @@
 pipeline {
-    agent any
-
-    stages {
-        stage('Build and Test') {
-            steps {
-                script {
-                    def yaml = readYaml file: 'path/to/your/github/actions.yml'
-                    sh "docker-compose -f ${yaml.jobs.build.steps[2].run} up -d --build"
-                    sh "docker run survey-form-v2 sh -c '${yaml.jobs.build.steps[3].run}'"
-                    sh "docker-compose -f ${yaml.jobs.build.steps[4].run} down"
-                }
-            }
-        }
+  agent {
+    docker {
+      image 'node:latest'
     }
+  }
+  
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+    
+    stage('Build and Test') {
+      steps {
+        sh 'docker-compose -f docker-compose.yml up -d --build'
+        sh 'docker run survey-form-v2 sh -c "npm test"'
+        sh 'docker-compose -f docker-compose.yml down'
+      }
+    }
+  }
+  
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+  }
+  
+  triggers {
+    githubPush()
+    githubPullRequest(
+      autopruning: true,
+      branches: [[name: 'develop']]
+    )
+  }
 }
