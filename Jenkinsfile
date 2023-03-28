@@ -24,12 +24,4 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '5'))
   }
-  
-  triggers {
-    githubPush()
-    githubPullRequest(
-      autopruning: true,
-      branches: [[name: 'develop']]
-    )
-  }
 }
